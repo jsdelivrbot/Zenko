@@ -1,0 +1,74 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ template "cosmos.fullname" . }}
+  labels:
+    app: {{ template "cosmos.name" . }}
+    chart: {{ template "cosmos.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "cosmos.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "cosmos.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ['npm', 'run', 'start_fsdataserver']
+          ports:
+            - name: fs-data
+              containerPort: 9992
+              protocol: TCP
+          env:
+            - name: FS_DATA_PATH
+              value: /data
+            - name: LISTEN_ADDR
+              value: "0.0.0.0"
+            - name: HEALTHCHECKS_ALLOWFROM
+              value: "0.0.0.0/0"
+          volumeMounts:
+            - name: backend-storage
+              mountPath: /data
+          # livenessProbe:
+          #   tcpSocket:
+          #     port: fs-data
+          #   initialDelaySeconds: 5
+          # readinessProbe:
+          #   tcpSocket:
+          #     port: fs-data
+          #   initialDelaySeconds: 5
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      volumes:
+        - name: backend-storage
+      {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+          {{- if .Values.persistence.existingClaim }}
+            claimName: {{ .Values.persistence.existingClaim }}
+          {{- else }}
+            claimName: {{ template "cosmos.fullname" . }}
+          {{- end }}
+      {{- else }}
+          emptyDir: {}
+      {{- end }}
