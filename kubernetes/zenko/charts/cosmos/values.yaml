@@ -11,6 +11,8 @@ persistence:
 # ------------------------------------------------------------------------------
 
 pfsd:
+  name: pfsd
+
   replicaCount: 1
 
   image:
@@ -32,6 +34,8 @@ pfsd:
 # ------------------------------------------------------------------------------
 
 rcd:
+  name: rcd
+
   image:
     repository: gguiulfo/rcd
     tag: latest
