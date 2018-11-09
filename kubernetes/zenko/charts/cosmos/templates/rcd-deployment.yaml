@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "cosmos.rcd.fullname" . }}
+  labels:
+    app: {{ template "cosmos.name" . }}
+    chart: {{ template "cosmos.chart" . }}
+    component: rcd
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ template "cosmos.name" . }}
+      component: rcd
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "cosmos.name" . }}
+        component: rcd
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.rcd.image.repository }}:{{ .Values.rcd.image.tag }}"
+          imagePullPolicy: {{ .Values.rcd.image.pullPolicy }}
+          args: ['tail -f /dev/null']
+          volumeMounts:
+            - name: backend-storage
+              mountPath: /data
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      volumes:
+        - name: backend-storage
+          persistentVolumeClaim:
+          {{- if .Values.persistence.existingClaim }}
+            claimName: {{ .Values.persistence.existingClaim }}
+          {{- else }}
+            claimName: {{ template "cosmos.fullname" . }}
+          {{- end }}
