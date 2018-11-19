@@ -27,7 +27,8 @@ models:
       name: Lint charts
       command: >
         helm lint kubernetes/zenko/ &&
-        helm lint kubernetes/zenko/charts/*
+        helm lint kubernetes/zenko/charts/* &&
+        helm lint kubernetes/cosmos
       haltOnFailure: true
   - ShellCommand: &dump_logs
       name: Dump zenko logs

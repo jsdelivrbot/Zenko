@@ -12,93 +12,21 @@ Before installing this chart, you must either have a Zenko or a standalone Cloud
 
 ## Installing the Chart
 
-1. Configure the cosmos backend as a Cloudserver location constraint.
+To install the chart with the release name `my-release`:
 
-```sh
-$ cat locationConfig.json
-{
-    "us-east-2": { // This is the region on the rclone.remote configuration
-        "type": "pfs",
-        "objectId": "nfs-42",
-        "legacyAwsBehavior": true,
-        "details": {
-            "bucketName": "nfs",
-            "bucketMatch": true,
-            "serverSideEncryption": true,
-            "supportsVersioning": false,
-            "mountPath": "/data", // This should match the PV path
-            "pfsDaemonEndpoint": { // This should match the cosmos pfsd endpoint
-                "host": "my-release-cosmos-pfsd",
-                "port": "80"
-            }
-        }
-    }
-}
-```
-
-2. Create a PV backed by your desired storage plaform. For example, an NFS-backed PV:
-
-```sh
-$ cat << EOF | kubectl apply -f -
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: nfs-pv
-spec:
-  accessModes:
-  - ReadWriteMany
-  capacity:
-    storage: 300Gi
-  nfs:
-    path: /data
-    server: 10.100.1.42
-  persistentVolumeReclaimPolicy: Retain
-```
-
-3. Create a PVC for the just created PV.
-
-```sh
-$ cat << EOF | kubectl apply -f -
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  annotations:
-    helm.sh/resource-policy: keep
-  name: cosmos
-spec:
-  accessModes:
-  - ReadWriteMany
-  resources:
-    requests:
-      storage: 300Gi
-  volumeName: nfs-pv
-EOF
-```
-
-4. Configure the `rclone.remote` values in the `values.yaml` file. For example:
-
-```yaml
-rclone:
-  remote:
-    accessKey: my-access-key
-    secretKey: my-secret-key
-    endpoint: http://cloudserver.local
-    region: us-east-2
-```
-
-> **Tip**: This can also be perfomed via command line arguments to the below `helm install` command.
-
-5. Install the chart.
-
-```bash
+```console
 $ helm install --name my-release ./cosmos
 ```
+
+The command deploys Cosmos on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
+
+> **Tip**: List all releases using `helm list`
 
 ## Uninstalling the Chart
 
 To uninstall/delete the `my-release` deployment:
 
-```bash
+```console
 $ helm delete my-release
 ```
 
@@ -155,3 +83,81 @@ $ helm install ./cosmos --name my-release -f values.yaml
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
+
+## Installing the Chart with a Cloudserver instance
+
+> **Note**: For the purpose of this example, it is assumed that the Cloudserver installation release is `cloudserver`.
+Also, step 1 can be skipped. It is only there to prevent mistyping common variable names.
+
+1. Export common variables between both charts.
+
+```bash
+export COSMOS_RELEASE_NAME=blue-sky
+export NFS_LOCATION=nfs-1
+```
+
+2. Configure the Cosmos location constraint in `locationValues.yaml` file
+
+``` bash
+$ cat << EOF > locationValues.yaml
+api:
+  locationConstraints:
+    # Required default location
+    us-east-1:
+      type: file
+      objectId: us-east-1
+      legacyAwsBehavior: true
+      details: {}
+    # New Location
+    ${NFS_LOCATION}:
+      type: pfs
+      objectId: nfs-1
+      legacyAwsBehavior: true
+      details:
+        bucketMatch: true
+        pfsDaemonEndpoint:
+          host: ${COSMOS_RELEASE_NAME}-cosmos-pfsd
+          port: 80
+EOF
+```
+
+3. Upgrade the cloudserver chart using the `locationValues.yaml` file.
+
+```bash
+helm upgrade cloudserver . -f locationValues.yaml
+```
+
+4. Configure the Cosmos rclone's remote values.
+
+```bash
+$ cat << EOF > remoteValues.yaml
+rclone:
+  remote:
+    accessKey: my-access-key
+    secretKey: my-secret-key
+    endpoint: http://cloudserver
+    region: ${NFS_LOCATION}
+    bucket: my-nfs-bucket # Bucket will be created if not present
+
+persistentVolume:
+  server: 10.100.1.42 # IP of your NFS server
+  path: /data # NFS export
+EOF
+```
+
+5. Install cosmos.
+
+```bash
+$ helm install --name ${COSMOS_RELEASE_NAME} . -f remoteValues.yaml
+```
+
+## Rclone CronJob
+
+This chart deploys a Kubernetes CronJob which will periodically launch rclone jobs with the
+purpose of syncing metadata. The time at which this job runs can be configured through the
+`rclone.schedule` field in the `values.yaml` file. Additionally, you can manually create a
+jobs at will with the following command:
+
+```sh
+kubectl create my-job-name --from=cronjob/my-release-cosmos-rclone
+```
