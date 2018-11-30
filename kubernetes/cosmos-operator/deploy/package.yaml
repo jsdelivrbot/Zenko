@@ -1,0 +1,4 @@
+packageName: cosmos
+channels:
+- name: alpha
+  currentCSV: cosmos-operator.v0.0.1

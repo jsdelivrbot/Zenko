@@ -1,0 +1,6 @@
+apiVersion: zenko.io/v1alpha1
+kind: Cosmos
+metadata:
+  name: cosmos-app
+spec:
+  replicaCount: 1
