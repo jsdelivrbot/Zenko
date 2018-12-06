@@ -138,16 +138,24 @@ stages:
     - Git: *git_pull
     - ShellCommand:
         name: Kubeconfig
-        command: mkdir -p ~/.kube ; echo "$CI_KUBECONFIG" | envsubst > ~/.kube/config ; sleep 600
+        command: mkdir -p ~/.kube ; echo "$CI_KUBECONFIG" | envsubst > ~/.kube/config
         env:
           CI_KUBECONFIG: '%(secret:openstack_cluster_conf)s'
           NAMESPACE: '%(prop:workername)s'
     - ShellCommand:
         name: Create namespace
-        command: kubectl get ns ; kubectl -n defualt get pods
-        #command: kubectl create namespace '%(prop:workername)s' ; kubectl get ns ; kubectl -n defualt get pods
+        command: |
+          if ping -q -s 1 $CLUSTER_IP ; then
+            kubectl create namespace '%(prop:workername)s'
+            kubectl get ns
+          else
+            apk add bind-tools
+            dig +short myip.opendns.com @resolver1.opendns.com
+            exit 1
+          fi
         env:
           KUBECONFIG: ~/.kube/config
+          CLUSTER_IP: '%(secret:openstack_cluster_ip)s'
     - ShellCommand:
         name: Setup and run e2e
         command: make -e VERBOSE=1 test || sleep 600
