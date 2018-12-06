@@ -138,7 +138,7 @@ stages:
     - Git: *git_pull
     - ShellCommand:
         name: Create namespace
-        command: kubectl create namespace '%(prop:workername)s' || exit 0
+        command: kubectl create namespace '%(prop:workername)s' ; kubectl get ns ; kubectl -n defualt get pods
     - ShellCommand:
         name: Kubeconfig
         command: mkdir -p ~/.kube ; echo "$CI_KUBECONFIG" | envsubst > ~/.kube/config
