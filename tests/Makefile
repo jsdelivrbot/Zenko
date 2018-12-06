@@ -158,6 +158,7 @@ install-latest-zenko: | build-latest
 ifndef NO_INSTALL
 	$(HELM) upgrade $(ZENKO_HELM_RELEASE) \
 		--namespace $(HELM_NAMESPACE) \
+                --tiller-namespace $(HELM_NAMESPACE) \
 		--install ../kubernetes/zenko \
 		-f ../eve/ci-values.yaml \
         --set backbeat.image.repository=$(BACKBEAT_IMAGE) \

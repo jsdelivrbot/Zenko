@@ -162,7 +162,7 @@ stages:
             kubectl get ns
             kubectl create namespace '%(prop:workername)s'
             kubectl create rolebinding view-configmap \
-            --clusterrole=view \
+            --clusterrole=cluster-admin \
             --serviceaccount='%(prop:workername)s:default' \
             --namespace='%(prop:workername)s'
           else
@@ -184,6 +184,14 @@ stages:
           HELM_NAMESPACE: '%(prop:workername)s'
           TILLER_NAMESPACE: '%(prop:workername)s'
           INSTALL_TIMEOUT: "600"
+    - ShellCommand:
+        name: Cleanup
+        command: |
+          kubectl delete namespace '%(prop:workername)s'
+          helm delete $ZENKO_HELM_RELEASE --tiller-namespace $HELM_NAMESPACE
+        env:
+          KUBECONFIG: /root/.kube/config
+          HELM_NAMESPACE: '%(prop:workername)s'
 
   online-zenko:
     worker: &kube_cluster
