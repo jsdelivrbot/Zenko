@@ -161,6 +161,10 @@ stages:
             kubectl config use-context admin-cluster.local || exit 1
             kubectl get ns
             kubectl create namespace '%(prop:workername)s'
+            kubectl create rolebinding view-configmap \
+            --clusterrole=view \
+            --serviceaccount='%(prop:workername)s:default' \
+            --namespace='%(prop:workername)s'
           else
             apk add bind-tools
             dig +short myip.opendns.com @resolver1.opendns.com
@@ -171,12 +175,12 @@ stages:
           CLUSTER_IP: '%(secret:openstack_cluster_ip)s'
     - ShellCommand:
         name: Setup and run e2e
-        command: make -e VERBOSE=1 test || sleep 600
+        command: make -e VERBOSE=1 test || (sleep 600 ; exit 1)
         workdir: build/tests
         env:
           <<: [*secrets_env, *docker_env]
           KUBECONFIG: /root/.kube/config
-          ZENKO_HELM_RELEASE: '%(prop:workername)s'
+          ZENKO_HELM_RELEASE: 'zenko-offline'
           HELM_NAMESPACE: '%(prop:workername)s'
           TILLER_NAMESPACE: '%(prop:workername)s'
           INSTALL_TIMEOUT: "600"
