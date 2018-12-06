@@ -138,23 +138,36 @@ stages:
     - Git: *git_pull
     - ShellCommand:
         name: Kubeconfig
-        command: mkdir -p ~/.kube ; echo "$CI_KUBECONFIG" | envsubst > ~/.kube/config
+        command: |
+          set -ex
+          rm -rf /root/.kube
+          mkdir -p /root/.kube
+          echo "$CI_KUBECONFIG" | envsubst > /root/.kube/config
+          head /root/.kube/config
+          sleep 5
         env:
           CI_KUBECONFIG: '%(secret:openstack_cluster_conf)s'
           NAMESPACE: '%(prop:workername)s'
     - ShellCommand:
         name: Create namespace
         command: |
-          if ping -q -s 1 $CLUSTER_IP ; then
-            kubectl create namespace '%(prop:workername)s'
+          if ping -q -w 1 -s 1 $CLUSTER_IP ; then
+            sleep 5
+            echo $KUBECONFIG
+            ls ~/.kube
+            kubectl config view
+            KUBECONFIG=$KUBECONFIG
+            kubectl config get-contexts --kubeconfig $KUBECONFIG
+            kubectl config use-context admin-cluster.local || exit 1
             kubectl get ns
+            kubectl create namespace '%(prop:workername)s'
           else
             apk add bind-tools
             dig +short myip.opendns.com @resolver1.opendns.com
             exit 1
           fi
         env:
-          KUBECONFIG: ~/.kube/config
+          KUBECONFIG: /root/.kube/config
           CLUSTER_IP: '%(secret:openstack_cluster_ip)s'
     - ShellCommand:
         name: Setup and run e2e
@@ -162,7 +175,7 @@ stages:
         workdir: build/tests
         env:
           <<: [*secrets_env, *docker_env]
-          KUBECONFIG: ~/.kube/config
+          KUBECONFIG: /root/.kube/config
           ZENKO_HELM_RELEASE: '%(prop:workername)s'
           HELM_NAMESPACE: '%(prop:workername)s'
           TILLER_NAMESPACE: '%(prop:workername)s'
