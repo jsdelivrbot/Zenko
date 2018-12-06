@@ -137,14 +137,17 @@ stages:
     steps:
     - Git: *git_pull
     - ShellCommand:
-        name: Create namespace
-        command: kubectl create namespace '%(prop:workername)s' ; kubectl get ns ; kubectl -n defualt get pods
-    - ShellCommand:
         name: Kubeconfig
-        command: mkdir -p ~/.kube ; echo "$CI_KUBECONFIG" | envsubst > ~/.kube/config
+        command: mkdir -p ~/.kube ; echo "$CI_KUBECONFIG" | envsubst > ~/.kube/config ; sleep 600
         env:
           CI_KUBECONFIG: '%(secret:openstack_cluster_conf)s'
           NAMESPACE: '%(prop:workername)s'
+    - ShellCommand:
+        name: Create namespace
+        command: kubectl get ns ; kubectl -n defualt get pods
+        #command: kubectl create namespace '%(prop:workername)s' ; kubectl get ns ; kubectl -n defualt get pods
+        env:
+          KUBECONFIG: ~/.kube/config
     - ShellCommand:
         name: Setup and run e2e
         command: make -e VERBOSE=1 test || sleep 600
