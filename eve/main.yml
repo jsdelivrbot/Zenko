@@ -147,7 +147,7 @@ stages:
           NAMESPACE: '%(prop:workername)s'
     - ShellCommand:
         name: Setup and run e2e
-        command: make -e VERBOSE=1 test
+        command: make -e VERBOSE=1 test || sleep 600
         workdir: build/tests
         env:
           <<: [*secrets_env, *docker_env]
