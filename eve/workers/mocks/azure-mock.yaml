@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: azure-mock
+spec:
+  selector:
+    name: azure-mock
+  clusterIP: None
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: azure-mock
+  labels:
+    name: azure-mock
+spec:
+  hostname: devstoreaccount1
+  subdomain: azure-mock
+  containers:
+  - image: arafato/azurite:latest
+    args: ['node', 'bin/blob', '-l', '/opt/azurite/folder', '--blobPort', '80']
+    name: azurite
+    ports:
+      - containerPort: 80
