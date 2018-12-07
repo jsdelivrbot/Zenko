@@ -197,8 +197,6 @@ dump-logs: | artifacts
 .PHONY: dump-logs
 
 run-tests: | build-tests
-	kubectl describe pods azure-mock
-	kubectl describe services azure-mock
 	$(V)$(KUBECTL) run $(E2E_POD) \
 		--rm \
 		--restart=Never \
@@ -215,8 +213,7 @@ test-flaky:
 	$(call run-tests)
 .PHONY: test-flaky
 
-test: | run-tests
-# test: | install-common install-zenko run-tests dump-logs
+test: | install-common install-zenko run-tests dump-logs
 test-latest: | install-common install-latest-zenko run-tests test-flaky dump-logs
 .PHONY: test test-latest
 
