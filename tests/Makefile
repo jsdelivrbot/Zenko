@@ -197,6 +197,8 @@ dump-logs: | artifacts
 .PHONY: dump-logs
 
 run-tests: | build-tests
+	kubectl get pods
+	kubectl get services
 	$(V)$(KUBECTL) run $(E2E_POD) \
 		--rm \
 		--restart=Never \
