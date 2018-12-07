@@ -21,7 +21,7 @@ spec:
   hostname: devstoreaccount1
   subdomain: azure-mock
   containers:
-  - image: arafato/azurite:latest
+  - image: tmacro/azure-mock:latest
     args: ['node', 'bin/blob', '-l', '/opt/azurite/folder', '--blobPort', '80']
     name: azurite
     ports:
