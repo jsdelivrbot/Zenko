@@ -213,7 +213,8 @@ test-flaky:
 	$(call run-tests)
 .PHONY: test-flaky
 
-test: | install-common install-zenko run-tests dump-logs
+test: | run-tests
+# test: | install-common install-zenko run-tests dump-logs
 test-latest: | install-common install-latest-zenko run-tests test-flaky dump-logs
 .PHONY: test test-latest
 
