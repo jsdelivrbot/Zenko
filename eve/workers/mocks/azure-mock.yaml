@@ -6,11 +6,15 @@ spec:
   selector:
     name: azure-mock
   clusterIP: None
+  ports:
+    - name: unused
+      port: 80
+      targetPort: 80
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: azure-mock
+  name: azure-mock-pod
   labels:
     name: azure-mock
 spec:
